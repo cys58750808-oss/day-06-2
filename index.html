@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영어 단어장</title>
+</head>
+<body>
+  <h1>영어 단어장</h1>
+
+  <form id="add-form">
+    <input type="text" id="word-input" placeholder="단어">
+    <input type="text" id="meaning-input" placeholder="뜻">
+    <button type="submit">추가</button>
+  </form>
+
+  <ul id="word-list"></ul>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = "https://qlqusyzaezadkagvefqj.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFscXVzeXphZXphZGthZ3ZlZnFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTgwOTUsImV4cCI6MjEwNjMzNDA5NX0.Jui1ahdhJV4mC5rVW_tbnC5TA-up6TUIunRKWw8bVVQ";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const addForm = document.getElementById("add-form");
+    const wordInput = document.getElementById("word-input");
+    const meaningInput = document.getElementById("meaning-input");
+    const wordList = document.getElementById("word-list");
+
+    async function loadWords() {
+      const { data, error } = await supabaseClient
+        .from("words")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      renderWords(data);
+    }
+
+    function renderWords(words) {
+      wordList.innerHTML = "";
+
+      for (const item of words) {
+        const li = document.createElement("li");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = item.memorized;
+        checkbox.addEventListener("change", () => toggleMemorized(item.id, checkbox.checked));
+
+        const wordSpan = document.createElement("span");
+        wordSpan.textContent = item.word;
+
+        const meaningSpan = document.createElement("span");
+        meaningSpan.textContent = item.meaning;
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "삭제";
+        deleteButton.addEventListener("click", () => deleteWord(item.id));
+
+        li.appendChild(checkbox);
+        li.appendChild(wordSpan);
+        li.appendChild(meaningSpan);
+        li.appendChild(deleteButton);
+        wordList.appendChild(li);
+      }
+    }
+
+    async function addWord(word, meaning) {
+      const { error } = await supabaseClient
+        .from("words")
+        .insert({ word, meaning });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      await loadWords();
+    }
+
+    async function toggleMemorized(id, memorized) {
+      const { error } = await supabaseClient
+        .from("words")
+        .update({ memorized })
+        .eq("id", id);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      await loadWords();
+    }
+
+    async function deleteWord(id) {
+      const { error } = await supabaseClient
+        .from("words")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      await loadWords();
+    }
+
+    addForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const word = wordInput.value.trim();
+      const meaning = meaningInput.value.trim();
+
+      if (!word || !meaning) {
+        return;
+      }
+
+      addWord(word, meaning);
+      wordInput.value = "";
+      meaningInput.value = "";
+      wordInput.focus();
+    });
+
+    loadWords();
+  </script>
+</body>
+</html>
