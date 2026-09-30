@@ -4,23 +4,198 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>영어 단어장</title>
+<style>
+  :root {
+    --accent: #4f7cff;
+    --accent-dim: #e4eaff;
+    --text: #1f2430;
+    --text-sub: #6b7280;
+    --border: #e5e7eb;
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --danger: #e0524d;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+
+  .app {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 20px;
+    text-align: center;
+    margin: 0 0 20px;
+  }
+
+  #add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--card);
+    padding: 14px;
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  #add-form input {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+  }
+
+  #add-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  #add-form button {
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  #add-form button:active {
+    opacity: 0.85;
+  }
+
+  #tabs {
+    display: flex;
+    gap: 6px;
+    margin-top: 20px;
+    background: var(--card);
+    padding: 4px;
+    border-radius: 10px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-sub);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  #count-display {
+    text-align: center;
+    color: var(--text-sub);
+    font-size: 13px;
+    margin: 12px 0 8px;
+  }
+
+  #word-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #word-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    padding: 12px 14px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  #word-list li input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+  }
+
+  .word-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .word-text .word {
+    font-size: 15px;
+    font-weight: 600;
+    word-break: break-word;
+  }
+
+  .word-text .meaning {
+    font-size: 13px;
+    color: var(--text-sub);
+    word-break: break-word;
+  }
+
+  #word-list li.done {
+    background: var(--accent-dim);
+  }
+
+  #word-list li.done .word-text {
+    opacity: 0.55;
+  }
+
+  #word-list li.done .word {
+    text-decoration: line-through;
+  }
+
+  .delete-btn {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--danger);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 8px;
+    cursor: pointer;
+  }
+</style>
 </head>
 <body>
-  <h1>영어 단어장</h1>
+  <div class="app">
+    <h1>영어 단어장</h1>
 
-  <form id="add-form">
-    <input type="text" id="word-input" placeholder="단어">
-    <input type="text" id="meaning-input" placeholder="뜻">
-    <button type="submit">추가</button>
-  </form>
+    <form id="add-form">
+      <input type="text" id="word-input" placeholder="단어">
+      <input type="text" id="meaning-input" placeholder="뜻">
+      <button type="submit">추가</button>
+    </form>
 
-  <div id="tabs">
-    <button type="button" id="tab-all" class="tab active">전체</button>
-    <button type="button" id="tab-remaining" class="tab">외울 것</button>
+    <div id="tabs">
+      <button type="button" id="tab-all" class="tab active">전체</button>
+      <button type="button" id="tab-remaining" class="tab">외울 것</button>
+    </div>
+    <p id="count-display"></p>
+
+    <ul id="word-list"></ul>
   </div>
-  <p id="count-display"></p>
-
-  <ul id="word-list"></ul>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
@@ -78,26 +253,35 @@
 
       for (const item of words) {
         const li = document.createElement("li");
+        li.classList.toggle("done", item.memorized);
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = item.memorized;
         checkbox.addEventListener("change", () => toggleMemorized(item.id, checkbox.checked));
 
+        const textWrap = document.createElement("div");
+        textWrap.className = "word-text";
+
         const wordSpan = document.createElement("span");
+        wordSpan.className = "word";
         wordSpan.textContent = item.word;
 
         const meaningSpan = document.createElement("span");
+        meaningSpan.className = "meaning";
         meaningSpan.textContent = item.meaning;
+
+        textWrap.appendChild(wordSpan);
+        textWrap.appendChild(meaningSpan);
 
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
+        deleteButton.className = "delete-btn";
         deleteButton.textContent = "삭제";
         deleteButton.addEventListener("click", () => deleteWord(item.id));
 
         li.appendChild(checkbox);
-        li.appendChild(wordSpan);
-        li.appendChild(meaningSpan);
+        li.appendChild(textWrap);
         li.appendChild(deleteButton);
         wordList.appendChild(li);
       }
