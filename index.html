@@ -14,6 +14,12 @@
     <button type="submit">추가</button>
   </form>
 
+  <div id="tabs">
+    <button type="button" id="tab-all" class="tab active">전체</button>
+    <button type="button" id="tab-remaining" class="tab">외울 것</button>
+  </div>
+  <p id="count-display"></p>
+
   <ul id="word-list"></ul>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -26,6 +32,12 @@
     const wordInput = document.getElementById("word-input");
     const meaningInput = document.getElementById("meaning-input");
     const wordList = document.getElementById("word-list");
+    const countDisplay = document.getElementById("count-display");
+    const tabAll = document.getElementById("tab-all");
+    const tabRemaining = document.getElementById("tab-remaining");
+
+    let allWords = [];
+    let currentFilter = "all";
 
     async function loadWords() {
       const { data, error } = await supabaseClient
@@ -38,7 +50,27 @@
         return;
       }
 
-      renderWords(data);
+      allWords = data;
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      const total = allWords.length;
+      const memorizedCount = allWords.filter((item) => item.memorized).length;
+      countDisplay.textContent = `${total}개 중 ${memorizedCount}개 외움`;
+
+      const visibleWords = currentFilter === "remaining"
+        ? allWords.filter((item) => !item.memorized)
+        : allWords;
+
+      renderWords(visibleWords);
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      tabAll.classList.toggle("active", filter === "all");
+      tabRemaining.classList.toggle("active", filter === "remaining");
+      renderCurrentView();
     }
 
     function renderWords(words) {
@@ -111,6 +143,9 @@
 
       await loadWords();
     }
+
+    tabAll.addEventListener("click", () => setFilter("all"));
+    tabRemaining.addEventListener("click", () => setFilter("remaining"));
 
     addForm.addEventListener("submit", (event) => {
       event.preventDefault();
